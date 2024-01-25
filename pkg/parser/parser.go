@@ -1,11 +1,15 @@
 package parser
 
 import (
+	"distgo/internal/helper"
 	"fmt"
+	"go.uber.org/zap"
 	"os/exec"
 	"regexp"
 	"strings"
 )
+
+const BuildCommand = "cd %s && go build -x -a -work %s && rm main"
 
 var AutonomyPattern = regexp.MustCompile(`mkdir -p \$WORK/([^/]+)/`)
 var DependencyPattern = regexp.MustCompile(`/b\d{3}/`)
@@ -57,6 +61,29 @@ func extractDependencyPattern(command string, autonomy []string) []string {
 	return result
 }
 
+func getGoBuildCommands(projectPath string, mainFile string) (string, error) {
+	// generate the go commands
+	command := fmt.Sprintf(BuildCommand, projectPath, mainFile)
+	output, err := helper.ExecuteCommand(command)
+	if err != nil {
+		zap.L().Error("getGoBuildCommands generating building commands error",
+			zap.String("ProjectPath", projectPath),
+			zap.String("MainFile", mainFile),
+			zap.String("Command", command),
+			zap.Error(err),
+		)
+		return "", err
+	}
+	if err := helper.WriteToFile("commands.sh", output); err != nil {
+		zap.L().Error("getGoBuildCommands write commands to file failed",
+			zap.String("ProjectPath", projectPath),
+			zap.String("MainFile", mainFile),
+			zap.Error(err),
+		)
+	}
+	return output, nil
+}
+
 func Compile(compileJobs []*CompileJob) {
 	for _, job := range compileJobs {
 		command := "cd " + job.ProjectPath + "\n" + "WORK=" + job.Path + "\n" + strings.Join(job.Commands, "\n")
@@ -67,15 +94,21 @@ func Compile(compileJobs []*CompileJob) {
 			fmt.Printf("command exec error: %v, %s", err, string(output))
 		}
 
-		//fmt.Println(command)
-		//fmt.Println("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 	}
 }
 
-func New(commandStr string, projectPath string) ([]*CompileJob, error) {
+func New(projectPath string, mainFile string) ([]*CompileJob, error) {
+	commandStr, err := getGoBuildCommands(projectPath, mainFile)
+	if err != nil {
+		return nil, err
+	}
 	var rawCommands = strings.Split(commandStr, "\n")
 	workDir := rawCommands[0]
-	fmt.Println(len(rawCommands))
+	zap.L().Info("generate commands success",
+		zap.String("ProjectPath", projectPath),
+		zap.String("MainFile", mainFile),
+		zap.Int("NumbersOfLine", len(rawCommands)),
+	)
 	var commands [][]string
 	idx := 1
 	for idx < len(rawCommands) {
@@ -134,5 +167,10 @@ func New(commandStr string, projectPath string) ([]*CompileJob, error) {
 			ProjectPath:  projectPath,
 		})
 	}
+	zap.L().Info("split commands success",
+		zap.String("ProjectPath", projectPath),
+		zap.String("MainFile", mainFile),
+		zap.Int("NumbersOfCommands", len(result)),
+	)
 	return result, nil
 }
