@@ -2,12 +2,13 @@ package mq
 
 import (
 	"context"
+	"distgo/internal/dao/redis"
 	"distgo/pkg/parser"
-	"distgo/pkg/redis"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/hibiken/asynq"
+	"go.uber.org/zap"
 	"os"
 	"path/filepath"
 )
@@ -19,6 +20,10 @@ const (
 func NewCompileJob(job *parser.CompileJob) (*asynq.Task, error) {
 	payload, err := json.Marshal(job)
 	if err != nil {
+		zap.L().Error("payload, err := json.Marshal(job) failed in NewCompileJob",
+			zap.Any("Job", job),
+			zap.Error(err),
+		)
 		return nil, err
 	}
 	return asynq.NewTask(TypeSendCompileJobs, payload), nil
