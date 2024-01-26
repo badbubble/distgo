@@ -6,17 +6,23 @@ import (
 	"distgo/internal/logger"
 	"distgo/internal/setting"
 	"distgo/pkg/parser"
+	"flag"
 	"github.com/hibiken/asynq"
 	"go.uber.org/zap"
 	"log"
 	"time"
 )
 
-const ConfigFilePath = "configs/distgo.yaml"
-const ProjectPath = "/Users/badbubble/GolandProjects/BubblePL"
-const MainFile = "main.go"
-
 func main() {
+	var ProjectPath string
+	var MainFile string
+	var ConfigFilePath string
+
+	flag.StringVar(&ProjectPath, "p", "../BubblePL/", "project file path")
+	flag.StringVar(&MainFile, "m", "main.go", "the filename of the main func")
+	flag.StringVar(&ConfigFilePath, "c", "configs/master.yaml", "the file path of the master.yaml")
+	flag.Parse()
+
 	// read configurations
 	if err := setting.Init(ConfigFilePath); err != nil {
 		log.Fatalf("read configurations failed: %v", err)
