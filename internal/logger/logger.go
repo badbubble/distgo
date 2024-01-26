@@ -10,7 +10,7 @@ import (
 
 var lg *zap.Logger
 
-// Init 初始化lg
+// Init logger
 func Init(cfg *setting.LogConfig, mode string) (err error) {
 	writeSyncer := getLogWriter(cfg.Filename, cfg.MaxSize, cfg.MaxBackups, cfg.MaxAge)
 	encoder := getEncoder()
@@ -21,7 +21,7 @@ func Init(cfg *setting.LogConfig, mode string) (err error) {
 	}
 	var core zapcore.Core
 	if mode == "dev" {
-		// 进入开发模式，日志输出到终端
+		// dev mode sending logs to console
 		consoleEncoder := zapcore.NewConsoleEncoder(zap.NewDevelopmentEncoderConfig())
 		core = zapcore.NewTee(
 			zapcore.NewCore(encoder, writeSyncer, l),

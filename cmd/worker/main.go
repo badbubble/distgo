@@ -5,13 +5,17 @@ import (
 	"distgo/internal/dao/redis"
 	"distgo/internal/logger"
 	"distgo/internal/setting"
+	"flag"
 	"github.com/hibiken/asynq"
 	"log"
 )
 
-const ConfigFilePath = "configs/distgo.yaml"
-
 func main() {
+	var ConfigFilePath string
+
+	flag.StringVar(&ConfigFilePath, "c", "configs/worker.yaml", "the file path of the master.yaml")
+	flag.Parse()
+
 	// read configurations
 	if err := setting.Init(ConfigFilePath); err != nil {
 		log.Fatalf("read configurations failed: %v", err)
