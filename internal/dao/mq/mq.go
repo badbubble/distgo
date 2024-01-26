@@ -7,8 +7,16 @@ import (
 )
 
 var AsynqClient *asynq.Client
+var AsynqServer *asynq.Server
 
-func InitServer() error {
+func InitServer(config *setting.AsynqConfig) error {
+	AsynqServer = asynq.NewServer(
+		asynq.RedisClientOpt{Addr: fmt.Sprintf("%s:%d", config.Host, config.Port)},
+		asynq.Config{
+			// Specify how many concurrent workers to use
+			Concurrency: config.Concurrency,
+		},
+	)
 	return nil
 }
 
