@@ -44,6 +44,11 @@ func main() {
 		)
 		return
 	}
+	zap.L().Info("generate compile jobs",
+		zap.String("ProjectPath", ProjectPath),
+		zap.String("MainFile", MainFile),
+		zap.Int("Length", len(compileJobs)),
+	)
 	// send the compileJobs to Asynq
 	for _, job := range compileJobs {
 		task, err := mq.NewCompileJob(job)
@@ -59,6 +64,12 @@ func main() {
 				zap.Any("task", task),
 				zap.Error(err),
 			)
+			return
 		}
 	}
+	zap.L().Info("All jobs have sent to Asynq",
+		zap.String("ProjectPath", ProjectPath),
+		zap.String("MainFile", MainFile),
+		zap.Int("Length", len(compileJobs)),
+	)
 }
