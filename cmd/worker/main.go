@@ -9,7 +9,7 @@ import (
 	"log"
 )
 
-const ConfigFilePath = "configs/master.yaml"
+const ConfigFilePath = "configs/distgo.yaml"
 
 func main() {
 	// read configurations
