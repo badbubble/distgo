@@ -1,45 +1,39 @@
 package main
 
 import (
+	"distgo/internal/dao/mq"
+	"distgo/internal/dao/redis"
+	"distgo/internal/logger"
 	"distgo/internal/setting"
-	"distgo/pkg/mq"
-	"distgo/pkg/redis"
-	"fmt"
 	"github.com/hibiken/asynq"
 	"log"
 )
 
+const ConfigFilePath = "configs/master.yaml"
+
 func main() {
-	err := setting.Init("/home/badbubble/distgo/configs/distgo.yaml")
-	if err != nil {
-		log.Fatalf("read settings failed: %v", err)
+	// read configurations
+	if err := setting.Init(ConfigFilePath); err != nil {
+		log.Fatalf("read configurations failed: %v", err)
 	}
-
-	err = redis.Init(setting.Conf.RedisConfig)
-	if err != nil {
-		log.Fatalf("create redis client failed: %v", err)
+	// initiate logger
+	if err := logger.Init(setting.Conf.LogConfig, setting.Conf.Mode); err != nil {
+		log.Fatalf("initiate logger failed: %v", err)
 	}
+	// connect to redis
+	if err := redis.Init(setting.Conf.RedisConfig); err != nil {
+		log.Fatalf("connect to client failed: %v", err)
+	}
+	if err := mq.InitServer(setting.Conf.AsynqConfig); err != nil {
 
-	srv := asynq.NewServer(
-		asynq.RedisClientOpt{Addr: fmt.Sprintf("%s:%d", setting.Conf.AsynqConfig.Host, setting.Conf.RedisConfig.Port)},
-		asynq.Config{
-			// Specify how many concurrent workers to use
-			Concurrency: 2,
-			// Optionally specify multiple queues with different priority.
-			Queues: map[string]int{
-				"critical": 6,
-				"default":  3,
-				"low":      1,
-			},
-			// See the godoc for other configuration options
-		},
-	)
+	}
 
 	// mux maps a type to a handler
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(mq.TypeSendCompileJobs, mq.HandleCompileJobs)
 
-	if err := srv.Run(mux); err != nil {
+	if err := mq.AsynqServer.Run(mux); err != nil {
 		log.Fatalf("could not run server: %v", err)
 	}
+
 }
