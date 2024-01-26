@@ -32,23 +32,28 @@ func NewCompileJob(job *parser.CompileJob) (*asynq.Task, error) {
 func HandleCompileJobs(ctx context.Context, t *asynq.Task) error {
 	var job parser.CompileJob
 	if err := json.Unmarshal(t.Payload(), &job); err != nil {
-		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
+		zap.L().Error("HandleCompileJobs json.Unmarshal failed",
+			zap.Error(err),
+		)
+		return err
 	}
-	fmt.Println(job.Commands)
+
 	for _, dep := range job.Dependencies {
 		// check dependencies
 		filename := fmt.Sprintf(filepath.Join(job.Path, dep))
 		// check local file
+		// file does not exist
 		if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
-			fmt.Printf("This file is not found in local: %s", filename)
-			// file does not exist
+			zap.L().Info("dependencies required!",
+				zap.String("filename", filename),
+			)
 			// try to get file from redis
-			// download file
-			var tmp string
-			fmt.Scan(&tmp)
-
 			err = redis.ReadFileFromRedis(filename)
 			if err != nil {
+				zap.L().Error("Failed to pull file from redis",
+					zap.String("file", filename),
+					zap.Error(err),
+				)
 				fmt.Printf("Failed to pull file from redis: %v\n", err)
 				return err
 			}
