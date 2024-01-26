@@ -1,11 +1,11 @@
-name: "worker"
+name: "master"
 mode: "release"
 version: "v0.0.1"
 start_time: "2024-01-23"
 
 log:
   level: "info"
-  filename: "worker.log"
+  filename: "master.log"
   max_size: 200
   max_age: 30
   max_backups: 7
