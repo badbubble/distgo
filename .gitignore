@@ -184,4 +184,5 @@ cython_debug/
 .idea/
 
 configs/web.yaml
-configs/distgo.yaml
+asynqmon
+commands.sh
