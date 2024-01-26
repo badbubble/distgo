@@ -2,11 +2,13 @@
 
 DISTGO="distgo"
 WEB="service"
-
+MASTER="master"
+WORKER="worker"
 #amd64:
 #	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -w" -o ${BINARY}
 build:
-	go build -ldflags "-s -w" -o ${WEB} cmd/web/main.go
+	go build -ldflags "-s -w" -o ${MASTER} cmd/master/main.go
+	go build -ldflags "-s -w" -o ${WORKER} cmd/worker/main.go
 run:
 	@go run ./main.go
 
