@@ -40,4 +40,19 @@ func main() {
 		log.Fatalf("could not run server: %v", err)
 	}
 
+	//var stop string
+	//for {
+	//	fmt.Println(">")
+	//	fmt.Scanln(&stop)
+	//	fmt.Println("EXECUTE")
+	//	result, _ := helper.ReadFromFile("commands_s.sh")
+	//	jobs, _ := parser.NewJobsByCommands(result, "/Users/badbubble/GolandProjects/BubblePL", "main.go")
+	//	zap.L().Info("the job is",
+	//		zap.Any("dep", jobs[0].Dependencies),
+	//		zap.Int("Length", len(jobs)),
+	//	)
+	//	compiler.Compile(jobs[0])
+	//	fmt.Println("DONE")
+	//}
+
 }
