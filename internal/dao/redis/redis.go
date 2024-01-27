@@ -3,6 +3,7 @@ package redis
 import (
 	"context"
 	"distgo/internal/setting"
+	"errors"
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -12,6 +13,8 @@ import (
 
 // RootPathContent root path for example: b100, b101
 var RootPathContent = "IT IS A PATH"
+var DonePattern = "DONE"
+var ErrNoKeyFound = errors.New("NO KEY WAS FOUND IN REDIS")
 
 var (
 	client *redis.Client
@@ -68,7 +71,7 @@ func SaveFileToRedis(filePath string) error {
 				return err
 			}
 		} else {
-			err = client.Set(context.Background(), path, RootPathContent, 0).Err()
+			err = client.Set(context.Background(), path, DonePattern, 0).Err()
 			if err != nil {
 				zap.L().Error("Failed to create data to Redis",
 					zap.String("Path", path),
@@ -88,6 +91,25 @@ func SaveFileToRedis(filePath string) error {
 	return nil
 }
 
+func UpdateFileStatus(filename string) error {
+	return client.Set(context.Background(), filename, DonePattern, 0).Err()
+}
+
+func CheckFileStatue(filename string) (bool, error) {
+	value, err := client.Get(ctx, filename).Result()
+	if err != nil {
+		zap.L().Info("The file has not been create by other worker",
+			zap.String("Filepath", filename),
+			zap.Error(err),
+		)
+		return false, nil
+	}
+	if value == DonePattern {
+		return true, nil
+	}
+	return false, nil
+}
+
 // ReadFileFromRedis can get all files from filePath for example
 func ReadFileFromRedis(filePath string) error {
 	pattern := fmt.Sprintf("%s/*", filePath)
@@ -103,6 +125,13 @@ func ReadFileFromRedis(filePath string) error {
 			zap.Error(err),
 		)
 		return err
+	}
+	if len(keys) == 0 {
+		zap.L().Error("no key found in Redis",
+			zap.String("Pattern", pattern),
+			zap.Error(ErrNoKeyFound),
+		)
+		return ErrNoKeyFound
 	}
 
 	zap.L().Info("found keys in Redis",
@@ -138,7 +167,7 @@ func ReadFileFromRedis(filePath string) error {
 			zap.String("path", key),
 		)
 
-		if value != RootPathContent {
+		if value != DonePattern {
 			// Write the value to a file
 			if err := os.WriteFile(key, []byte(value), 0644); err != nil {
 				zap.L().Error("Failed to write to a file",
