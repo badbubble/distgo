@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-const BuildCommand = "cd %s && go build -x -a -work %s && rm main"
+const BuildCommand = "cd %s && go build -p 1 -x -a -work %s && rm main"
 
 var AutonomyPattern = regexp.MustCompile(`mkdir -p \$WORK/([^/]+)/`)
 var DependencyPattern = regexp.MustCompile(`/b\d{3}/`)
@@ -66,7 +66,7 @@ func getGoBuildCommands(projectPath string, mainFile string) (string, error) {
 	command := fmt.Sprintf(BuildCommand, projectPath, mainFile)
 	output, err := helper.ExecuteCommand(command)
 	if err != nil {
-		zap.L().Error("getGoBuildCommands generating building commands error",
+		zap.L().Error("getGoBuildCommands generating building commands err",
 			zap.String("ProjectPath", projectPath),
 			zap.String("MainFile", mainFile),
 			zap.String("Command", command),
@@ -91,17 +91,13 @@ func Compile(compileJobs []*CompileJob) {
 		output, err := cmd.CombinedOutput()
 
 		if err != nil {
-			fmt.Printf("command exec error: %v, %s", err, string(output))
+			fmt.Printf("command exec err: %v, %s", err, string(output))
 		}
 
 	}
 }
 
-func New(projectPath string, mainFile string) ([]*CompileJob, error) {
-	commandStr, err := getGoBuildCommands(projectPath, mainFile)
-	if err != nil {
-		return nil, err
-	}
+func NewJobsByCommands(commandStr string, projectPath string, mainFile string) ([]*CompileJob, error) {
 	var rawCommands = strings.Split(commandStr, "\n")
 	workDir := rawCommands[0]
 	zap.L().Info("generate commands success",
@@ -136,33 +132,33 @@ func New(projectPath string, mainFile string) ([]*CompileJob, error) {
 		commands = append(commands, linkCommand)
 	}
 
-	var IndependentCommands [][]string
-
-	joinFlag := false
-	for _, c := range commands {
-		if joinFlag {
-			IndependentCommands[len(IndependentCommands)-1] = append(IndependentCommands[len(IndependentCommands)-1], c...)
-		} else {
-			IndependentCommands = append(IndependentCommands, c)
-		}
-
-		command := strings.Join(c, "\n")
-		if strings.Contains(command, "cd /") {
-			joinFlag = true
-		} else {
-			joinFlag = false
-		}
-	}
+	//var IndependentCommands [][]string
+	//
+	//joinFlag := false
+	//for _, c := range commands {
+	//	if joinFlag {
+	//		IndependentCommands[len(IndependentCommands)-1] = append(IndependentCommands[len(IndependentCommands)-1], c...)
+	//	} else {
+	//		IndependentCommands = append(IndependentCommands, c)
+	//	}
+	//
+	//	command := strings.Join(c, "\n")
+	//	if strings.Contains(command, "cd /") {
+	//		joinFlag = true
+	//	} else {
+	//		joinFlag = false
+	//	}
+	//}
 	var result []*CompileJob
 
-	for _, commands := range IndependentCommands {
-		command := strings.Join(commands, "\n")
+	for _, c := range commands {
+		command := strings.Join(c, "\n")
 		autonomy := extractAutonomy(command)
 		dep := extractDependencyPattern(command, autonomy)
 		result = append(result, &CompileJob{
 			Autonomy:     autonomy,
 			Dependencies: dep,
-			Commands:     commands,
+			Commands:     c,
 			Path:         strings.Split(workDir, "=")[1],
 			ProjectPath:  projectPath,
 		})
@@ -173,4 +169,12 @@ func New(projectPath string, mainFile string) ([]*CompileJob, error) {
 		zap.Int("NumbersOfCommands", len(result)),
 	)
 	return result, nil
+}
+
+func New(projectPath string, mainFile string) ([]*CompileJob, error) {
+	commandStr, err := getGoBuildCommands(projectPath, mainFile)
+	if err != nil {
+		return nil, err
+	}
+	return NewJobsByCommands(commandStr, projectPath, mainFile)
 }
