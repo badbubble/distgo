@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"log"
 	"os"
 )
 
@@ -20,4 +21,13 @@ func WriteToFile(filePath string, content string) error {
 		return err
 	}
 	return nil
+}
+
+func ReadFromFile(filepath string) (string, error) {
+	body, err := os.ReadFile(filepath)
+	if err != nil {
+		log.Fatalf("unable to read file: %v", err)
+		return "", err
+	}
+	return string(body), err
 }
