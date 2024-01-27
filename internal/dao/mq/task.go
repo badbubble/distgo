@@ -5,12 +5,11 @@ import (
 	"distgo/internal/dao/redis"
 	"distgo/pkg/parser"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/hibiken/asynq"
 	"go.uber.org/zap"
-	"os"
 	"path/filepath"
+	"time"
 )
 
 const (
@@ -41,22 +40,28 @@ func HandleCompileJobs(ctx context.Context, t *asynq.Task) error {
 	for _, dep := range job.Dependencies {
 		// check dependencies
 		filename := fmt.Sprintf(filepath.Join(job.Path, dep))
-		// check local file
-		// file does not exist
-		if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
-			zap.L().Info("dependencies required!",
+		// check if the file created in redis
+		for {
+			ok, _ := redis.CheckFileStatue(filename)
+			if ok {
+				zap.L().Info("find dependencies",
+					zap.String("filename", filename),
+				)
+				break
+			}
+			time.Sleep(1 * time.Second)
+			zap.L().Info("Cant find dependencies, try again",
 				zap.String("filename", filename),
 			)
-			// try to get file from redis
-			err = redis.ReadFileFromRedis(filename)
-			if err != nil {
-				zap.L().Error("Failed to pull file from redis",
-					zap.String("file", filename),
-					zap.Error(err),
-				)
-				fmt.Printf("Failed to pull file from redis: %v\n", err)
-				return err
-			}
+		}
+		// try to get file from redis
+		if err := redis.ReadFileFromRedis(filename); err != nil {
+			zap.L().Error("Failed to pull file from redis",
+				zap.String("file", filename),
+				zap.Error(err),
+			)
+			fmt.Printf("Failed to pull file from redis: %v\n", err)
+			return err
 		}
 
 	}
@@ -67,6 +72,11 @@ func HandleCompileJobs(ctx context.Context, t *asynq.Task) error {
 		err := redis.SaveFileToRedis(filepath.Join(job.Path, au))
 		if err != nil {
 			fmt.Println("save file to redis error")
+			return err
+		}
+		err = redis.UpdateFileStatus(filepath.Join(job.Path, au))
+		if err != nil {
+			fmt.Println("update status failed")
 			return err
 		}
 	}
