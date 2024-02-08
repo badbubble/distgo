@@ -28,7 +28,7 @@ func main() {
 	if err := redis.Init(setting.Conf.RedisConfig); err != nil {
 		log.Fatalf("connect to client failed: %v", err)
 	}
-	if err := mq.InitServer(setting.Conf.AsynqConfig); err != nil {
+	if err := mq.InitServerWorker(setting.Conf.AsynqConfig); err != nil {
 
 	}
 
