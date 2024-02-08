@@ -1,0 +1,29 @@
+name: "coordinator"
+mode: "release"
+version: "v0.0.1"
+start_time: "2024-01-23"
+
+log:
+  level: "info"
+  filename: "coordinator.log"
+  max_size: 200
+  max_age: 30
+  max_backups: 7
+
+cluster:
+  hosts:
+    - 192.168.31.14
+    - 192.168.31.85
+
+redis:
+  host: 192.168.31.146
+  port: 6379
+  password: ""
+  db: 0
+  pool_size: 100
+
+asynq:
+  host: 192.168.31.146
+  port: 6379
+  password: ""
+  concurrency: 1
