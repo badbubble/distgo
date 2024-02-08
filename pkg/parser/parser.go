@@ -15,11 +15,20 @@ var AutonomyPattern = regexp.MustCompile(`mkdir -p \$WORK/([^/]+)/`)
 var DependencyPattern = regexp.MustCompile(`/b\d{3}/`)
 
 type CompileJob struct {
+	MD5          string
 	Autonomy     []string
 	Dependencies []string
 	Commands     []string
 	Path         string
 	ProjectPath  string
+}
+
+type CompileGroup struct {
+	ID          int
+	MD5         string
+	ProjectPath string
+	Length      int
+	Jobs        []*CompileJob
 }
 
 func stringInSlice(a string, list []string) bool {
@@ -74,6 +83,7 @@ func getGoBuildCommands(projectPath string, mainFile string) (string, error) {
 		)
 		return "", err
 	}
+
 	if err := helper.WriteToFile("commands.sh", output); err != nil {
 		zap.L().Error("getGoBuildCommands write commands to file failed",
 			zap.String("ProjectPath", projectPath),
@@ -97,7 +107,7 @@ func Compile(compileJobs []*CompileJob) {
 	}
 }
 
-func NewJobsByCommands(commandStr string, projectPath string, mainFile string) ([]*CompileJob, error) {
+func NewJobsByCommands(commandStr string, projectPath string, mainFile string) ([]*CompileGroup, error) {
 	var rawCommands = strings.Split(commandStr, "\n")
 	workDir := rawCommands[0]
 	zap.L().Info("generate commands success",
@@ -150,28 +160,72 @@ func NewJobsByCommands(commandStr string, projectPath string, mainFile string) (
 	//	}
 	//}
 	var result []*CompileJob
+	var gTasks []helper.Task
+	var idToTask = make(map[string]*CompileJob)
 
 	for _, c := range commands {
+		for i, line := range c {
+			// Check if the line ends with 'EOF' and 'EOF' is not the only text in the line
+			if strings.HasSuffix(line, "EOF") && line != "EOF" {
+				// Move 'EOF' to the new line
+				fmt.Println(line)
+				c[i] = strings.TrimSuffix(line, "EOF") + "\nEOF"
+			}
+		}
 		command := strings.Join(c, "\n")
 		autonomy := extractAutonomy(command)
 		dep := extractDependencyPattern(command, autonomy)
-		result = append(result, &CompileJob{
+
+		//result = append(result, &CompileJob{
+		//	Autonomy:     autonomy,
+		//	Dependencies: dep,
+		//	Commands:     c,
+		//	Path:         strings.Split(workDir, "=")[1],
+		//	ProjectPath:  projectPath,
+		//})
+		idToTask[autonomy[0]] = &CompileJob{
 			Autonomy:     autonomy,
 			Dependencies: dep,
 			Commands:     c,
 			Path:         strings.Split(workDir, "=")[1],
 			ProjectPath:  projectPath,
-		})
+		}
+
+		if autonomy[0] != "b001" || len(dep) != 0 {
+			gTasks = append(gTasks, helper.Task{
+				ID:           autonomy[0],
+				Dependencies: dep,
+			})
+		}
+
+	}
+	//for _, task := range gTasks {
+	//	fmt.Println(task)
+	//}
+	groups := helper.GroupTasks(gTasks)
+	var compileGroups []*CompileGroup
+	for i, group := range groups {
+		newGroup := &CompileGroup{
+			ID:          i,
+			ProjectPath: projectPath,
+			Length:      0,
+			Jobs:        []*CompileJob{},
+		}
+		for _, id := range group {
+			newGroup.Jobs = append(newGroup.Jobs, idToTask[id])
+		}
+		compileGroups = append(compileGroups, newGroup)
+		fmt.Printf("Group %d: %v\n", i+1, group)
 	}
 	zap.L().Info("split commands success",
 		zap.String("ProjectPath", projectPath),
 		zap.String("MainFile", mainFile),
 		zap.Int("NumbersOfCommands", len(result)),
 	)
-	return result, nil
+	return compileGroups, nil
 }
 
-func New(projectPath string, mainFile string) ([]*CompileJob, error) {
+func New(projectPath string, mainFile string) ([]*CompileGroup, error) {
 	commandStr, err := getGoBuildCommands(projectPath, mainFile)
 	if err != nil {
 		return nil, err
