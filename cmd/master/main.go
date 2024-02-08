@@ -41,7 +41,7 @@ func main() {
 	}
 
 	//split the go build commands to compileJobs
-	compileJobs, err := parser.New(ProjectPath, MainFile)
+	compileGroups, err := parser.New(ProjectPath, MainFile)
 	if err != nil {
 		zap.L().Error("parser.New failed",
 			zap.String("ProjectPath", ProjectPath),
@@ -53,19 +53,19 @@ func main() {
 	zap.L().Info("generate compile jobs",
 		zap.String("ProjectPath", ProjectPath),
 		zap.String("MainFile", MainFile),
-		zap.Int("Length", len(compileJobs)),
+		zap.Int("Length", len(compileGroups)),
 	)
-	// send the compileJobs to Asynq
-	for _, job := range compileJobs {
-		task, err := mq.NewCompileJob(job)
+	// send the group to coordinator
+	for _, group := range compileGroups {
+		task, err := mq.NewCompileGroupJob(group)
 		if err != nil {
 			zap.L().Error("failed to create new job ",
-				zap.Any("Job", job),
+				zap.Any("group", group),
 				zap.Error(err),
 			)
 			return
 		}
-		if _, err = mq.AsynqClient.Enqueue(task, asynq.Retention(24*time.Hour), asynq.MaxRetry(10)); err != nil {
+		if _, err = mq.AsynqClient.Enqueue(task, asynq.Queue("Compile_Group"), asynq.Retention(24*time.Hour), asynq.MaxRetry(10)); err != nil {
 			zap.L().Error("failed to put task in asynq",
 				zap.Any("task", task),
 				zap.Error(err),
@@ -73,9 +73,27 @@ func main() {
 			return
 		}
 	}
+	// send the compileJobs to Asynq
+	//for _, job := range compileJobs {
+	//	task, err := mq.NewCompileJob(job)
+	//	if err != nil {
+	//		zap.L().Error("failed to create new job ",
+	//			zap.Any("Job", job),
+	//			zap.Error(err),
+	//		)
+	//		return
+	//	}
+	//	if _, err = mq.AsynqClient.Enqueue(task, asynq.Retention(24*time.Hour), asynq.MaxRetry(10)); err != nil {
+	//		zap.L().Error("failed to put task in asynq",
+	//			zap.Any("task", task),
+	//			zap.Error(err),
+	//		)
+	//		return
+	//	}
+	//}
 	zap.L().Info("All jobs have sent to Asynq",
 		zap.String("ProjectPath", ProjectPath),
 		zap.String("MainFile", MainFile),
-		zap.Int("Length", len(compileJobs)),
+		zap.Int("Length", len(compileGroups)),
 	)
 }
