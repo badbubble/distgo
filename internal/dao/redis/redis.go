@@ -98,10 +98,6 @@ func UpdateFileStatus(filename string) error {
 func CheckFileStatue(filename string) (bool, error) {
 	value, err := client.Get(ctx, filename).Result()
 	if err != nil {
-		zap.L().Info("The file has not been create by other worker",
-			zap.String("Filepath", filename),
-			zap.Error(err),
-		)
 		return false, nil
 	}
 	if value == DonePattern {
