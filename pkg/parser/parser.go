@@ -9,7 +9,8 @@ import (
 	"strings"
 )
 
-const BuildCommand = "cd %s && go build -p 1 -x -a -work %s && rm main"
+const BuildCommand = "cd %s && go build -p 1 -x -a -work %s && rm main && rm -rf /tmp/go-build/*"
+const ModCommand = "cd %s && go mod tidy"
 
 var AutonomyPattern = regexp.MustCompile(`mkdir -p \$WORK/([^/]+)/`)
 var DependencyPattern = regexp.MustCompile(`/b\d{3}/`)
@@ -71,8 +72,21 @@ func extractDependencyPattern(command string, autonomy []string) []string {
 }
 
 func getGoBuildCommands(projectPath string, mainFile string) (string, error) {
+	// go mod
+	command := fmt.Sprintf(ModCommand, projectPath)
+	_, err := helper.ExecuteCommand(command)
+	if err != nil {
+		zap.L().Error("getGoBuildCommands generating building commands err",
+			zap.String("ProjectPath", projectPath),
+			zap.String("MainFile", mainFile),
+			zap.String("Command", command),
+			zap.Error(err),
+		)
+		return "", err
+	}
+
 	// generate the go commands
-	command := fmt.Sprintf(BuildCommand, projectPath, mainFile)
+	command = fmt.Sprintf(BuildCommand, projectPath, mainFile)
 	output, err := helper.ExecuteCommand(command)
 	if err != nil {
 		zap.L().Error("getGoBuildCommands generating building commands err",
