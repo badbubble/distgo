@@ -162,7 +162,13 @@ func NewJobsByCommands(commandStr string, projectPath string, mainFile string) (
 	var result []*CompileJob
 	var gTasks []helper.Task
 	var idToTask = make(map[string]*CompileJob)
-
+	finalExecutionGroup := &CompileGroup{
+		ID:          0,
+		MD5:         "",
+		ProjectPath: "",
+		Length:      0,
+		Jobs:        []*CompileJob{},
+	}
 	for _, c := range commands {
 		for i, line := range c {
 			// Check if the line ends with 'EOF' and 'EOF' is not the only text in the line
@@ -183,21 +189,37 @@ func NewJobsByCommands(commandStr string, projectPath string, mainFile string) (
 		//	Path:         strings.Split(workDir, "=")[1],
 		//	ProjectPath:  projectPath,
 		//})
-		idToTask[autonomy[0]] = &CompileJob{
-			Autonomy:     autonomy,
-			Dependencies: dep,
-			Commands:     c,
-			Path:         strings.Split(workDir, "=")[1],
-			ProjectPath:  projectPath,
+		// fmt.Println(command)
+		if autonomy[0] != "b001" {
+			idToTask[autonomy[0]] = &CompileJob{
+				Autonomy:     autonomy,
+				Dependencies: dep,
+				Commands:     c,
+				Path:         strings.Split(workDir, "=")[1],
+				ProjectPath:  projectPath,
+			}
 		}
 
-		if autonomy[0] != "b001" || len(dep) != 0 {
+		if autonomy[0] != "b001" {
 			gTasks = append(gTasks, helper.Task{
 				ID:           autonomy[0],
 				Dependencies: dep,
 			})
-		}
+		} else {
+			if len(finalExecutionGroup.Jobs) == 0 {
+				finalExecutionGroup.Jobs = append(finalExecutionGroup.Jobs, &CompileJob{
+					Autonomy:     autonomy,
+					Dependencies: dep,
+					Commands:     c,
+					Path:         strings.Split(workDir, "=")[1],
+					ProjectPath:  projectPath,
+				})
+				finalExecutionGroup.Length = 1
+			} else {
+				finalExecutionGroup.Jobs[0].Commands = append(finalExecutionGroup.Jobs[0].Commands, c...)
+			}
 
+		}
 	}
 	//for _, task := range gTasks {
 	//	fmt.Println(task)
@@ -213,10 +235,19 @@ func NewJobsByCommands(commandStr string, projectPath string, mainFile string) (
 		}
 		for _, id := range group {
 			newGroup.Jobs = append(newGroup.Jobs, idToTask[id])
+			newGroup.Length += 1
 		}
 		compileGroups = append(compileGroups, newGroup)
 		fmt.Printf("Group %d: %v\n", i+1, group)
 	}
+	finalExecutionGroup.ID = len(compileGroups)
+	compileGroups = append(compileGroups, finalExecutionGroup)
+
+	//for _, g := range compileGroups {
+	//	for _, g := range g.Jobs {
+	//		fmt.Println(strings.Join(g.Commands, "\n"))
+	//	}
+	//}
 	zap.L().Info("split commands success",
 		zap.String("ProjectPath", projectPath),
 		zap.String("MainFile", mainFile),
