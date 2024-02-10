@@ -4,13 +4,16 @@ import (
 	"distgo/internal/helper"
 	"fmt"
 	"go.uber.org/zap"
+	"log"
+	"os"
 	"os/exec"
 	"regexp"
 	"strings"
 )
 
-const BuildCommand = "cd %s && go build -p 1 -x -a -work %s && rm main && rm -rf /tmp/go-build/*"
+const BuildCommand = "cd %s && go build -p 1 -x -a -work %s && rm main && rm -rf /tmp/go-build && mkdir /tmp/go-build"
 const ModCommand = "cd %s && go mod tidy"
+const ARG_MAX = 100000
 
 var AutonomyPattern = regexp.MustCompile(`mkdir -p \$WORK/([^/]+)/`)
 var DependencyPattern = regexp.MustCompile(`/b\d{3}/`)
@@ -111,11 +114,29 @@ func getGoBuildCommands(projectPath string, mainFile string) (string, error) {
 func Compile(compileJobs []*CompileJob) {
 	for _, job := range compileJobs {
 		command := "cd " + job.ProjectPath + "\n" + "WORK=" + job.Path + "\n" + strings.Join(job.Commands, "\n")
-		cmd := exec.Command("sh", "-c", command)
-		output, err := cmd.CombinedOutput()
-
-		if err != nil {
-			fmt.Printf("command exec err: %v, %s", err, string(output))
+		if len(command) < ARG_MAX {
+			cmd := exec.Command("sh", "-c", command)
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				fmt.Printf("command exec err: %v, %s", err, string(output))
+			}
+		} else {
+			tmpfile, err := os.Create("long_command")
+			if err != nil {
+				log.Fatalln(err)
+			}
+			// defer os.Remove(tmpfile.Name())
+			if _, err := tmpfile.Write([]byte(command)); err != nil {
+				log.Fatalln(err)
+			}
+			if err := tmpfile.Close(); err != nil {
+				log.Fatalln(err)
+			}
+			cmd := exec.Command("sh", tmpfile.Name())
+			output, err := cmd.CombinedOutput()
+			if err != nil {
+				fmt.Printf("command exec err: %v, %s", err, string(output))
+			}
 		}
 
 	}
