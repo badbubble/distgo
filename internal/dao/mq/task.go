@@ -49,6 +49,7 @@ func HandleCompileJobs(ctx context.Context, t *asynq.Task) error {
 		)
 		return err
 	}
+	zap.L().Info("Building", zap.String("Autonomy", job.Autonomy[0]))
 	// go mod tidy
 	if _, ok := CheckGoTidy[job.ProjectPath]; !ok {
 		zap.L().Info("Execute go mod tidy", zap.String("Project", job.ProjectPath))
