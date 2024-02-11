@@ -4,6 +4,7 @@ import (
 	"context"
 	"distgo/internal/dao/redis"
 	"distgo/internal/helper"
+	"distgo/internal/setting"
 	"distgo/pkg/parser"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,39 @@ import (
 )
 
 const TypeSendCompileGroup = "compile_group"
+
+func SendProjectsToWorker() error {
+	for _, host := range setting.Conf.ClusterConfig.Hosts {
+		_, err := helper.SendFilesTo(setting.Conf.ProjectsPath, host)
+		zap.L().Info("WRITE TO HOST", zap.String("Local", setting.Conf.ProjectsPath), zap.String("Host", host))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func GetGoBuildFilesFromWorker() error {
+	for _, host := range setting.Conf.ClusterConfig.Hosts {
+		_, err := helper.RecvFilesFrom(setting.Conf.GoBuildPath, host)
+		zap.L().Info("GET BUILD FILES FROM WORKER", zap.String("Local", setting.Conf.GoBuildPath), zap.String("Host", host))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func SendGoBuildFilesToWorker() error {
+	for _, host := range setting.Conf.ClusterConfig.Hosts {
+		_, err := helper.SendFilesTo(setting.Conf.GoBuildPath, host)
+		zap.L().Info("WRITE BUILD FILES TO WORKER", zap.String("Local", setting.Conf.GoBuildPath), zap.String("Host", host))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func HandleCompileGroup(ctx context.Context, t *asynq.Task) error {
 	var group parser.CompileGroup
@@ -26,7 +60,14 @@ func HandleCompileGroup(ctx context.Context, t *asynq.Task) error {
 	md5Str := helper.GetMD5Hash(group.ProjectPath + time.Now().String())
 
 	// copy project to cluster
-	helper.SendFilesTo(group.ProjectPath, "")
+	if err := SendProjectsToWorker(); err != nil {
+		return err
+	}
+	// copy tmp to cluster
+	if err := SendGoBuildFilesToWorker(); err != nil {
+		return err
+	}
+
 	// send jobs to cluster
 	for _, job := range group.Jobs {
 		job.MD5 = md5Str
@@ -52,8 +93,9 @@ func HandleCompileGroup(ctx context.Context, t *asynq.Task) error {
 		checkList = deleteElementFromCheckList(md5Str, checkList)
 	}
 	// get all files from cluster
-
-	// send all files to cluster
+	if err := GetGoBuildFilesFromWorker(); err != nil {
+		return err
+	}
 
 	return nil
 }
