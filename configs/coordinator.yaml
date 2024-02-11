@@ -12,18 +12,21 @@ log:
 
 cluster:
   hosts:
-    - 192.168.31.14
-    - 192.168.31.85
+    - "peter@192.168.31.150"
+    - "peter@192.168.31.170"
+  password: "123456"
+  projects_path: "/home/peter/Projects/"
+  go_build_path: "/tmp/go-build/"
 
 redis:
-  host: 192.168.31.146
+  host: ""
   port: 6379
   password: ""
   db: 0
   pool_size: 100
 
 asynq:
-  host: 192.168.31.146
+  host: ""
   port: 6379
   password: ""
   concurrency: 1
