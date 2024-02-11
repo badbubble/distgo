@@ -9,13 +9,14 @@ import (
 var Conf = new(DistgoConfig)
 
 type DistgoConfig struct {
-	Name         string `mapstructure:"name"`
-	Mode         string `mapstructure:"mode"`
-	Port         int    `mapstructure:"port"`
-	*LogConfig   `mapstructure:"log"`
-	*MySQLConfig `mapstructure:"mysql"`
-	*RedisConfig `mapstructure:"redis"`
-	*AsynqConfig `mapstructure:"asynq"`
+	Name           string `mapstructure:"name"`
+	Mode           string `mapstructure:"mode"`
+	Port           int    `mapstructure:"port"`
+	*LogConfig     `mapstructure:"log"`
+	*MySQLConfig   `mapstructure:"mysql"`
+	*RedisConfig   `mapstructure:"redis"`
+	*AsynqConfig   `mapstructure:"asynq"`
+	*ClusterConfig `mapstructure:"cluster"`
 }
 
 type AsynqConfig struct {
@@ -51,6 +52,12 @@ type RedisConfig struct {
 	DB           int    `mapstructure:"db"`
 	PoolSize     int    `mapstructure:"pool_size"`
 	MinIdleConns int    `mapstructure:"min_idle_conns"`
+}
+
+type ClusterConfig struct {
+	Hosts        []string `mapstructure:"hosts"`
+	ProjectsPath string   `mapstructure:"projects_path"`
+	GoBuildPath  string   `mapstructure:"go_build_path"`
 }
 
 func Init(filepath string) (err error) {
