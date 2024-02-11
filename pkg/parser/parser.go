@@ -100,8 +100,14 @@ func getGoBuildCommands(projectPath string, mainFile string) (string, error) {
 		)
 		return "", err
 	}
-
-	if err := helper.WriteToFile("commands.sh", output); err != nil {
+	outputSplit := strings.Split(output, "\n")
+	var outputWithoutGet []string
+	for _, o := range outputSplit {
+		if !strings.HasPrefix(o, "# get ") {
+			outputWithoutGet = append(outputWithoutGet, o)
+		}
+	}
+	if err := helper.WriteToFile("commands.sh", strings.Join(outputWithoutGet, "\n")); err != nil {
 		zap.L().Error("getGoBuildCommands write commands to file failed",
 			zap.String("ProjectPath", projectPath),
 			zap.String("MainFile", mainFile),
