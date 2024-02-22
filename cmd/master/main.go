@@ -5,8 +5,10 @@ import (
 	"distgo/internal/dao/redis"
 	"distgo/internal/logger"
 	"distgo/internal/setting"
+	"distgo/internal/snowflake"
 	"distgo/pkg/parser"
 	"flag"
+	"fmt"
 	"github.com/hibiken/asynq"
 	"go.uber.org/zap"
 	"log"
@@ -39,7 +41,11 @@ func main() {
 	if err := mq.InitClient(setting.Conf.AsynqConfig); err != nil {
 		log.Fatalf("create asynq client failed: %v", err)
 	}
-
+	// init snowflake
+	if err := snowflake.Init(); err != nil {
+		log.Fatalf("init snowflake failed: %v", err)
+	}
+	fmt.Println(snowflake.GenID())
 	//split the go build commands to compileJobs
 	compileGroups, err := parser.New(ProjectPath, MainFile)
 	if err != nil {

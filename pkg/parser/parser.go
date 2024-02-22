@@ -2,6 +2,7 @@ package parser
 
 import (
 	"distgo/internal/helper"
+	"distgo/internal/snowflake"
 	"fmt"
 	"go.uber.org/zap"
 	"log"
@@ -11,15 +12,16 @@ import (
 	"strings"
 )
 
-const BuildCommand = "cd %s && go build -p 1 -n -a -work %s && rm -rf /tmp/go-build/ && mkdir /tmp/go-build/"
+const BuildCommand = "cd %s && go build -p 1 -n -a -work %s && rm -rf /tmp/go-build/ && mkdir -p /tmp/go-build/"
 const ModCommand = "cd %s && go mod tidy"
 const ARGMAX = 100000
 const GCCPrefix = "gcc"
 const CCPrefix = "cc"
 const WorkPathPattern = "$WORK"
-const WorkPath = "/tmp/go-build"
+const WorkPath = "/tmp/go-build/%s"
+const CreatBuildPath = "mkdir -p /tmp/go-build/%s"
 
-var AutonomyPattern = regexp.MustCompile(`mkdir -p /tmp/go-build/([^/]+)/`)
+var AutonomyPattern = regexp.MustCompile(`mkdir -p /tmp/go-build/[0-9]{15}/([^/]+)/`)
 var DependencyPattern = regexp.MustCompile(`/b\d{3}/`)
 
 type CompileJob struct {
@@ -33,7 +35,7 @@ type CompileJob struct {
 
 type CompileGroup struct {
 	ID          int
-	MD5         string
+	BuildPath   string
 	ProjectPath string
 	Length      int
 	Jobs        []*CompileJob
@@ -91,20 +93,20 @@ func removeGCCAndReplaceWorkPath(commands []string, path string) []string {
 
 func getGoBuildCommands(projectPath string, mainFile string) (string, error) {
 	// go mod
-	command := fmt.Sprintf(ModCommand, projectPath)
-	_, err := helper.ExecuteCommand(command)
-	if err != nil {
-		zap.L().Error("getGoBuildCommands generating building commands err",
-			zap.String("ProjectPath", projectPath),
-			zap.String("MainFile", mainFile),
-			zap.String("Command", command),
-			zap.Error(err),
-		)
-		return "", err
-	}
+	//command := fmt.Sprintf(ModCommand, projectPath)
+	//_, err := helper.ExecuteCommand(command)
+	//if err != nil {
+	//	zap.L().Error("getGoBuildCommands generating building commands err",
+	//		zap.String("ProjectPath", projectPath),
+	//		zap.String("MainFile", mainFile),
+	//		zap.String("Command", command),
+	//		zap.Error(err),
+	//	)
+	//	return "", err
+	//}
 
 	// generate the go commands
-	command = fmt.Sprintf(BuildCommand, projectPath, mainFile)
+	command := fmt.Sprintf(BuildCommand, projectPath, mainFile)
 	output, err := helper.ExecuteCommand(command)
 	if err != nil {
 		zap.L().Error("getGoBuildCommands generating building commands err",
@@ -122,6 +124,7 @@ func getGoBuildCommands(projectPath string, mainFile string) (string, error) {
 			outputWithoutGet = append(outputWithoutGet, o)
 		}
 	}
+	output = strings.Join(outputWithoutGet, "\n")
 	return output, nil
 }
 
@@ -157,6 +160,18 @@ func Compile(compileJobs []*CompileJob) {
 }
 
 func NewJobsByCommands(commandStr string, projectPath string, mainFile string) ([]*CompileGroup, error) {
+	buildPath := snowflake.GenID()
+	command := fmt.Sprintf(CreatBuildPath, buildPath)
+	_, err := helper.ExecuteCommand(command)
+	if err != nil {
+		zap.L().Error("NewJobsByCommands create build path err",
+			zap.String("ProjectPath", projectPath),
+			zap.String("MainFile", mainFile),
+			zap.String("Command", command),
+			zap.Error(err),
+		)
+		return nil, err
+	}
 	var rawCommands = strings.Split(commandStr, "\n")
 	// workDir := rawCommands[0]
 	zap.L().Info("generate commands success",
@@ -196,7 +211,7 @@ func NewJobsByCommands(commandStr string, projectPath string, mainFile string) (
 	var idToTask = make(map[string]*CompileJob)
 	finalExecutionGroup := &CompileGroup{
 		ID:          0,
-		MD5:         "",
+		BuildPath:   buildPath,
 		ProjectPath: "",
 		Length:      0,
 		Jobs:        []*CompileJob{},
@@ -211,7 +226,7 @@ func NewJobsByCommands(commandStr string, projectPath string, mainFile string) (
 				c[i] = strings.TrimSuffix(line, "EOF") + "\nEOF"
 			}
 		}
-		c = removeGCCAndReplaceWorkPath(c, WorkPath)
+		c = removeGCCAndReplaceWorkPath(c, fmt.Sprintf(WorkPath, buildPath))
 
 		command := strings.Join(c, "\n")
 		// add processed string
@@ -220,6 +235,7 @@ func NewJobsByCommands(commandStr string, projectPath string, mainFile string) (
 		autonomy := extractAutonomy(command)
 		dep := extractDependencyPattern(command, autonomy)
 		if len(autonomy) == 0 {
+			//fmt.Println(autonomy)
 			continue
 		}
 		if autonomy[0] != "b001" {
@@ -266,6 +282,7 @@ func NewJobsByCommands(commandStr string, projectPath string, mainFile string) (
 	for i, group := range groups {
 		newGroup := &CompileGroup{
 			ID:          i,
+			BuildPath:   buildPath,
 			ProjectPath: projectPath,
 			Length:      0,
 			Jobs:        []*CompileJob{},

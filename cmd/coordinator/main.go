@@ -5,12 +5,35 @@ import (
 	"distgo/internal/dao/redis"
 	"distgo/internal/logger"
 	"distgo/internal/setting"
+	"distgo/internal/snowflake"
 	"flag"
+	"fmt"
 	"github.com/hibiken/asynq"
 	"log"
+	"os"
+	"time"
 )
 
 func main() {
+	exitChan := make(chan bool)
+
+	// Start a new goroutine
+	go func() {
+		startTime := time.Now()
+		for {
+			if _, err := os.Stat("/path/to/your/file"); err == nil {
+				cost := time.Since(startTime).Seconds()
+				fmt.Println("############### Cost Time ###############")
+				fmt.Println(cost)
+				fmt.Println("####################################################")
+				exitChan <- true
+				return
+			} else {
+				fmt.Println("NO")
+			}
+		}
+	}()
+
 	var ConfigFilePath string
 
 	flag.StringVar(&ConfigFilePath, "c", "configs/coordinator.yaml", "the file path of the master.yaml")
@@ -34,7 +57,10 @@ func main() {
 	if err := mq.InitClient(setting.Conf.AsynqConfig); err != nil {
 		log.Fatalf("create asynq client failed: %v", err)
 	}
-
+	// init snowflake
+	if err := snowflake.Init(); err != nil {
+		log.Fatalf("init snowflake failed: %v", err)
+	}
 	// mux maps a type to a handler
 	mux := asynq.NewServeMux()
 	mux.HandleFunc(mq.TypeSendCompileGroup, mq.HandleCompileGroup)
@@ -42,4 +68,7 @@ func main() {
 	if err := mq.AsynqServer.Run(mux); err != nil {
 		log.Fatalf("could not run server: %v", err)
 	}
+
+	// Wait for the signal to exit
+	<-exitChan
 }

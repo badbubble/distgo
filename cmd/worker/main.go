@@ -5,6 +5,7 @@ import (
 	"distgo/internal/dao/redis"
 	"distgo/internal/logger"
 	"distgo/internal/setting"
+	"distgo/internal/snowflake"
 	"flag"
 	"github.com/hibiken/asynq"
 	"log"
@@ -30,6 +31,10 @@ func main() {
 	}
 	if err := mq.InitServerWorker(setting.Conf.AsynqConfig); err != nil {
 
+	}
+	// init snowflake
+	if err := snowflake.Init(); err != nil {
+		log.Fatalf("init snowflake failed: %v", err)
 	}
 
 	// mux maps a type to a handler
