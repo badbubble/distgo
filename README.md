@@ -1,12 +1,15 @@
 # distgo
 
-A Distributed Go Compiler
+A Distributed Go Compiler.
 
+This is a Lab project in [Distributed Systems Course](https://studiegids.vu.nl/en/courses/2023-2024/X_400130#/) authored by Hanjun Liu and Sebastiaan Gerritsen, under the supervision of Sacheendra Talluri.
+
+You can read more details from the [report](.github/report.pdf)
 ![arch](.github/ds.drawio.png)
 ## Architecture
-* Master: responsible for generating all the commands required for compilation on the head node. It organizes these commands into various dependency-based groups. Within each group, commands are independent of each other and can be run simultaneously on multiple nodes on DAS-5. Once organized, the master node dispatches these groups to the asynchronous task queue named `Compile_Group`.
-* Coordinator: to extract groups from the `Compile_Group` task queue and break them down into single command tasks and send them to the `Compile_Job` task queue. These tasks are then executed across multiple worker nodes. It manages the compilation process in a sequential manner, extracting each group one after the other. Additionally, the coordinator node is responsible for synchronizing the build result files across the worker nodes, ensuring a cohesive and efficient compilation process.
-* Worker: operates on a DAS-5 node. Its ongoing function is to continuously retrieve jobs from the `Compile_Job` task queue and execute them.
+* ***Master***: responsible for generating all the commands required for compilation on the head node. It organizes these commands into various dependency-based groups. Within each group, commands are independent of each other and can be run simultaneously on multiple nodes on DAS-5. Once organized, the master node dispatches these groups to the asynchronous task queue named `Compile_Group`.
+* ***Coordinator***: to extract groups from the `Compile_Group` task queue and break them down into single command tasks and send them to the `Compile_Job` task queue. These tasks are then executed across multiple worker nodes. It manages the compilation process in a sequential manner, extracting each group one after the other. Additionally, the coordinator node is responsible for synchronizing the build result files across the worker nodes, ensuring a cohesive and efficient compilation process.
+* ***Worker***: operates on a DAS-5 node. Its ongoing function is to continuously retrieve jobs from the `Compile_Job` task queue and execute them.
 ## Installation and Usage on DAS-5
 
 ### 1. Build this project
@@ -40,8 +43,7 @@ module load prun
 prun -v -NUMBER_OF_WORKERS -np NUMBER_OF_NODES ./worker
 ```
 ### 5. Configuring the Coordinator
-Update the configs/
-coordinator.yaml file to include the IP addresses of the nodes. These IP addresses can be obtained from the initial output lines in step 4.
+Update the `configs/coordinator.yaml` file to include the IP addresses of the nodes. These IP addresses can be obtained from the initial output lines in step 4.
 ```bash
 cluster:
   hosts:
@@ -87,3 +89,5 @@ Compilation Time             |               Exchange Dependencies Time         
 * [go-gin-example](https://github.com/eddycjy/go-gin-example)
 * [go-cyclic](https://github.com/elza2/go-cyclic)
 * [wego](https://github.com/schachmat/wego)
+
+##
