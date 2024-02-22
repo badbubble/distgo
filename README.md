@@ -59,6 +59,11 @@ cluster:
 ```bash
 ./master -p PATH_TO_THE_PROJECT -m PATH_TO_THE_MAIN_FILE
 ```
+## Performance Analysis
+### alist
+Compilation Time             | Exchange Dependencies Time  |  Distribute Commands Time
+:-------------------------:|:---------------------------:|:-------------------------:
+![Compilation Time](.github/compilation_time_alist.png) | ![Exchange Dependencies Time](.github/ex_dep_alist.png) | ![Distribute Commands Time](.github/dis_coms_alist.png)
 ## Tests
 * [alist](https://github.com/alist-org/alist)
 * [tdl](https://github.com/iyear/tdl)
