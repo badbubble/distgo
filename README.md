@@ -1,6 +1,6 @@
 # distgo
-A distributed Go compiler
-![arch](.github/distgo_arch.png)
+A Distributed Go Compiler
+![arch](.github/ds.drawio.png)
 ## Architecture
 * Master: responsible for generating all the commands required for compilation on the head node. It organizes these commands into various dependency-based groups. Within each group, commands are independent of each other and can be run simultaneously on multiple nodes on DAS-5. Once organized, the master node dispatches these groups to the asynchronous task queue named `Compile_Group`.
 * Coordinator: to extract groups from the `Compile_Group` task queue and break them down into single command tasks and send them to the `Compile_Job` task queue. These tasks are then executed across multiple worker nodes. It manages the compilation process in a sequential manner, extracting each group one after the other. Additionally, the coordinator node is responsible for synchronizing the build result files across the worker nodes, ensuring a cohesive and efficient compilation process.
