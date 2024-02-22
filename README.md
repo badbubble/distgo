@@ -1,11 +1,14 @@
 # distgo
+
 A Distributed Go Compiler
+
 ![arch](.github/ds.drawio.png)
 ## Architecture
 * Master: responsible for generating all the commands required for compilation on the head node. It organizes these commands into various dependency-based groups. Within each group, commands are independent of each other and can be run simultaneously on multiple nodes on DAS-5. Once organized, the master node dispatches these groups to the asynchronous task queue named `Compile_Group`.
 * Coordinator: to extract groups from the `Compile_Group` task queue and break them down into single command tasks and send them to the `Compile_Job` task queue. These tasks are then executed across multiple worker nodes. It manages the compilation process in a sequential manner, extracting each group one after the other. Additionally, the coordinator node is responsible for synchronizing the build result files across the worker nodes, ensuring a cohesive and efficient compilation process.
 * Worker: operates on a DAS-5 node. Its ongoing function is to continuously retrieve jobs from the `Compile_Job` task queue and execute them.
-## Installation
+## Installation and Usage on DAS-5
+
 ### 1. Build this project
 ```bash
 git clone https://github.com/badbubble/distgo && cd distgo/
@@ -64,6 +67,15 @@ cluster:
 Compilation Time             | Exchange Dependencies Time  |  Distribute Commands Time
 :-------------------------:|:---------------------------:|:-------------------------:
 ![Compilation Time](.github/compilation_time_alist.png) | ![Exchange Dependencies Time](.github/ex_dep_alist.png) | ![Distribute Commands Time](.github/dis_coms_alist.png)
+
+### osmedeus
+Compilation Time             |               Exchange Dependencies Time                |  Distribute Commands Time
+:-------------------------:|:-------------------------------------------------------:|:-------------------------:
+![Compilation Time](.github/osmedeus_ct.png) | ![Exchange Dependencies Time](.github/osmedeus_edt.png) | ![Distribute Commands Time](.github/osmedeus_dct.png)
+### go-redis
+Compilation Time             |               Exchange Dependencies Time                |  Distribute Commands Time
+:-------------------------:|:-------------------------------------------------------:|:-------------------------:
+![Compilation Time](.github/go_redis_ct.png) | ![Exchange Dependencies Time](.github/go_redis_edt.png) | ![Distribute Commands Time](.github/go_redis_dct.png)
 ## Tests
 * [alist](https://github.com/alist-org/alist)
 * [tdl](https://github.com/iyear/tdl)
