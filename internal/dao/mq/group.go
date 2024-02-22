@@ -10,8 +10,12 @@ import (
 	"fmt"
 	"github.com/hibiken/asynq"
 	"go.uber.org/zap"
+	"sync"
 	"time"
 )
+
+var JobDistributedTime = 0.0
+var ExchangeDepTime = 0.0
 
 const TypeSendCompileGroup = "compile_group"
 
@@ -26,24 +30,63 @@ func SendProjectsToWorker() error {
 	return nil
 }
 
-func GetGoBuildFilesFromWorker() error {
+func GetGoBuildFilesFromWorker(buildID string) error {
+	//for _, host := range setting.Conf.ClusterConfig.Hosts {
+	//	_, err := helper.RecvFilesFrom(fmt.Sprintf(setting.Conf.GoBuildPath, buildID), host)
+	//	zap.L().Info("GET BUILD FILES FROM WORKER", zap.String("Local", setting.Conf.GoBuildPath), zap.String("Host", host))
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
+	var wg sync.WaitGroup
+	errors := make(chan error, len(setting.Conf.ClusterConfig.Hosts))
+	defer close(errors)
+
 	for _, host := range setting.Conf.ClusterConfig.Hosts {
-		_, err := helper.RecvFilesFrom(setting.Conf.GoBuildPath, host)
-		zap.L().Info("GET BUILD FILES FROM WORKER", zap.String("Local", setting.Conf.GoBuildPath), zap.String("Host", host))
-		if err != nil {
-			return err
-		}
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			_, err := helper.RecvFilesFrom(fmt.Sprintf(setting.Conf.GoBuildPath, buildID), host)
+			zap.L().Info("GET BUILD FILES FROM WORKER", zap.String("Local", setting.Conf.GoBuildPath), zap.String("Host", host))
+			if err != nil {
+				errors <- err
+			}
+		}(host)
 	}
+	wg.Wait()
+	if len(errors) > 0 {
+		return <-errors // Return the first encountered error
+	}
+
 	return nil
 }
 
-func SendGoBuildFilesToWorker() error {
+func SendGoBuildFilesToWorker(buildID string) error {
+	//for _, host := range setting.Conf.ClusterConfig.Hosts {
+	//	_, err := helper.SendFilesTo(fmt.Sprintf(setting.Conf.GoBuildPath, buildID), host)
+	//	zap.L().Info("WRITE BUILD FILES TO WORKER", zap.String("Local", setting.Conf.GoBuildPath), zap.String("Host", host))
+	//	if err != nil {
+	//		return err
+	//	}
+	//}
+	var wg sync.WaitGroup
+	errors := make(chan error, len(setting.Conf.ClusterConfig.Hosts))
+	defer close(errors)
+
 	for _, host := range setting.Conf.ClusterConfig.Hosts {
-		_, err := helper.SendFilesTo(setting.Conf.GoBuildPath, host)
-		zap.L().Info("WRITE BUILD FILES TO WORKER", zap.String("Local", setting.Conf.GoBuildPath), zap.String("Host", host))
-		if err != nil {
-			return err
-		}
+		wg.Add(1)
+		go func(host string) {
+			defer wg.Done()
+			_, err := helper.SendFilesTo(fmt.Sprintf(setting.Conf.GoBuildPath, buildID), host)
+			zap.L().Info("WRITE BUILD FILES TO WORKER", zap.String("Local", setting.Conf.GoBuildPath), zap.String("Host", host))
+			if err != nil {
+				errors <- err
+			}
+		}(host)
+	}
+	wg.Wait()
+	if len(errors) > 0 {
+		return <-errors // Return the first encountered error
 	}
 	return nil
 }
@@ -60,14 +103,18 @@ func HandleCompileGroup(ctx context.Context, t *asynq.Task) error {
 	md5Str := helper.GetMD5Hash(group.ProjectPath + time.Now().String())
 
 	// copy project to cluster
-	if err := SendProjectsToWorker(); err != nil {
-		return err
-	}
+	//if err := SendProjectsToWorker(); err != nil {
+	//	return err
+	//}
 	// copy tmp to cluster
-	if err := SendGoBuildFilesToWorker(); err != nil {
+	startTime := time.Now()
+	if err := SendGoBuildFilesToWorker(group.BuildPath); err != nil {
 		return err
 	}
+	firstTansferTime := time.Since(startTime).Seconds()
 
+	// start time
+	startTime = time.Now()
 	// send jobs to cluster
 	for _, job := range group.Jobs {
 		job.MD5 = md5Str
@@ -88,15 +135,26 @@ func HandleCompileGroup(ctx context.Context, t *asynq.Task) error {
 			return nil
 		}
 	}
+	elapsedTime := time.Since(startTime).Seconds()
+	JobDistributedTime += elapsedTime
+	fmt.Println("############### Job Distributed Time ###############")
+	fmt.Println(JobDistributedTime)
+	fmt.Println("####################################################")
+
 	// query redis to get status
 	for len(checkList) != 0 {
 		checkList = deleteElementFromCheckList(md5Str, checkList)
 	}
 	// get all files from cluster
-	if err := GetGoBuildFilesFromWorker(); err != nil {
+	startTime = time.Now()
+	if err := GetGoBuildFilesFromWorker(group.BuildPath); err != nil {
 		return err
 	}
-
+	lastTransferTime := time.Since(startTime).Seconds()
+	ExchangeDepTime += lastTransferTime + firstTansferTime
+	fmt.Println("############### Dep Exchange Time ###############")
+	fmt.Println(ExchangeDepTime)
+	fmt.Println("####################################################")
 	return nil
 }
 
