@@ -13,13 +13,13 @@ func ExecuteCommand(command string) (string, error) {
 }
 
 func SendFilesTo(filePath string, host string) (string, error) {
-	command := fmt.Sprintf("rsync -avz %s %s:%s", filePath, host, filePath)
+	command := fmt.Sprintf("rsync -avz %s/ %s:%s", filePath, host, filePath)
 	fmt.Println(command)
 	return ExecuteCommand(command)
 }
 
 func RecvFilesFrom(filePath string, host string) (string, error) {
-	command := fmt.Sprintf("rsync -avz %s:%s %s", host, filePath, filePath)
+	command := fmt.Sprintf("rsync -avz %s:%s/ %s", host, filePath, filePath)
 	fmt.Println(command)
 	return ExecuteCommand(command)
 }
