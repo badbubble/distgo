@@ -66,18 +66,29 @@ cluster:
 ```
 ## Performance Analysis
 ### alist
-Compilation Time             | Exchange Dependencies Time  |  Distribute Commands Time
-:-------------------------:|:---------------------------:|:-------------------------:
-![Compilation Time](.github/compilation_time_alist.png) | ![Exchange Dependencies Time](.github/ex_dep_alist.png) | ![Distribute Commands Time](.github/dis_coms_alist.png)
+Compilation Time             |                   Exchange Dependencies Time                   |  Distribute Commands Time
+:-------------------------:|:--------------------------------------------------------------:|:-------------------------:
+![Compilation Time](.github/alist_the_whole_compiling_time.png) | ![Exchange Dependencies Time](.github/alist_exchange_time.png) | ![Distribute Commands Time](.github/alist_distribute_commands_time.png)
 
 ### osmedeus
-Compilation Time             |               Exchange Dependencies Time                |  Distribute Commands Time
-:-------------------------:|:-------------------------------------------------------:|:-------------------------:
-![Compilation Time](.github/osmedeus_ct.png) | ![Exchange Dependencies Time](.github/osmedeus_edt.png) | ![Distribute Commands Time](.github/osmedeus_dct.png)
+Compilation Time             |                    Exchange Dependencies Time                     |  Distribute Commands Time
+:-------------------------:|:-----------------------------------------------------------------:|:-------------------------:
+![Compilation Time](.github/osmedeus_the_whole_compiling_time.png) | ![Exchange Dependencies Time](.github/osmedeus_exchange_time.png) | ![Distribute Commands Time](.github/osmedeus_distribute_commands_time.png)
 ### go-redis
-Compilation Time             |               Exchange Dependencies Time                |  Distribute Commands Time
-:-------------------------:|:-------------------------------------------------------:|:-------------------------:
-![Compilation Time](.github/go_redis_ct.png) | ![Exchange Dependencies Time](.github/go_redis_edt.png) | ![Distribute Commands Time](.github/go_redis_dct.png)
+Compilation Time             |                    Exchange Dependencies Time                     |  Distribute Commands Time
+:-------------------------:|:-----------------------------------------------------------------:|:-------------------------:
+![Compilation Time](.github/go-redis_the_whole_compiling_time.png) | ![Exchange Dependencies Time](.github/go-redis_exchange_time.png) | ![Distribute Commands Time](.github/go-redis_distribute_commands_time.png)
+
+### go-cycle
+Compilation Time             |                    Exchange Dependencies Time                     |  Distribute Commands Time
+:-------------------------:|:-----------------------------------------------------------------:|:-------------------------:
+![Compilation Time](.github/go-cycle_the_whole_compiling_time.png) | ![Exchange Dependencies Time](.github/go-cycle_exchange_time.png) | ![Distribute Commands Time](.github/go-cycle_distribute_commands_time.png)
+
+### BubblePL-Go
+Compilation Time             |                    Exchange Dependencies Time                     |  Distribute Commands Time
+:-------------------------:|:-----------------------------------------------------------------:|:-------------------------:
+![Compilation Time](.github/BubblePL_the_whole_compiling_time.png) | ![Exchange Dependencies Time](.github/BubblePL_exchange_time.png) | ![Distribute Commands Time](.github/BubblePL_distribute_commands_time.png)
+
 ## Tests
 * [alist](https://github.com/alist-org/alist)
 * [tdl](https://github.com/iyear/tdl)
