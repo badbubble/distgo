@@ -21,15 +21,13 @@ func main() {
 	go func() {
 		startTime := time.Now()
 		for {
-			if _, err := os.Stat("/path/to/your/file"); err == nil {
+			if _, err := os.Stat("/home/ppp23114/Projects/Projects/wego/main"); err == nil {
 				cost := time.Since(startTime).Seconds()
 				fmt.Println("############### Cost Time ###############")
 				fmt.Println(cost)
 				fmt.Println("####################################################")
 				exitChan <- true
 				return
-			} else {
-				fmt.Println("NO")
 			}
 		}
 	}()
