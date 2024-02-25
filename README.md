@@ -89,13 +89,38 @@ Compilation Time             |                    Exchange Dependencies Time    
 :-------------------------:|:-----------------------------------------------------------------:|:-------------------------:
 ![Compilation Time](.github/BubblePL_the_whole_compiling_time.png) | ![Exchange Dependencies Time](.github/BubblePL_exchange_time.png) | ![Distribute Commands Time](.github/BubblePL_distribute_commands_time.png)
 
+### tdl
+Compilation Time             |                    Exchange Dependencies Time                     |  Distribute Commands Time
+:-------------------------:|:-----------------------------------------------------------------:|:-------------------------:
+![Compilation Time](.github/tdl_the_whole_compiling_time.png) | ![Exchange Dependencies Time](.github/tdl_exchange_time.png) | ![Distribute Commands Time](.github/tdl_distribute_commands_time.png)
+
+### wego
+Compilation Time             |                  Exchange Dependencies Time                   |  Distribute Commands Time
+:-------------------------:|:-------------------------------------------------------------:|:-------------------------:
+![Compilation Time](.github/wego_the_whole_compiling_time.png) | ![Exchange Dependencies Time](.github/wego_exchange_time.png) | ![Distribute Commands Time](.github/wego_distribute_commands_time.png)
+
+### simplebank
+Compilation Time             |                  Exchange Dependencies Time                   |  Distribute Commands Time
+:-------------------------:|:-------------------------------------------------------------:|:-------------------------:
+![Compilation Time](.github/simplebank_the_whole_compiling_time.png) | ![Exchange Dependencies Time](.github/simplebank_exchange_time.png) | ![Distribute Commands Time](.github/simplebank_distribute_commands_time.png)
+
+### gg
+Compilation Time             |                 Exchange Dependencies Time                  |  Distribute Commands Time
+:-------------------------:|:-----------------------------------------------------------:|:-------------------------:
+![Compilation Time](.github/gg_the_whole_compiling_time.png) | ![Exchange Dependencies Time](.github/gg_exchange_time.png) | ![Distribute Commands Time](.github/gg_distribute_commands_time.png)
+
+### go-gin-example
+Compilation Time             |                  Exchange Dependencies Time                   |  Distribute Commands Time
+:-------------------------:|:-------------------------------------------------------------:|:-------------------------:
+![Compilation Time](.github/go-gin-example_the_whole_compiling_time.png) | ![Exchange Dependencies Time](.github/go-gin-example_exchange_time.png) | ![Distribute Commands Time](.github/go-gin-example_distribute_commands_time.png)
+
 ## Tests
 * [alist](https://github.com/alist-org/alist)
 * [tdl](https://github.com/iyear/tdl)
 * [gg](https://github.com/mzz2017/gg)
 * [simplebank](https://github.com/techschool/simplebank)
-* [Bubble-Go](https://github.com/badbubble/BubblePL-Go)
-* [distgo](https://github.com/badbubble/distgo)
+* [BubblePL-Go](https://github.com/badbubble/BubblePL-Go)
+* [distgo](https://github.com/redis/go-redis)
 * [osmedeus](https://github.com/j3ssie/osmedeus)
 * [go-gin-example](https://github.com/eddycjy/go-gin-example)
 * [go-cyclic](https://github.com/elza2/go-cyclic)
